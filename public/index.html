@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DM-Board</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%89%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>🐉 DM-Board</h1>
+  <div class="encounter-status" id="encounter-status">
+    <span class="round-badge">Runde <strong id="round-display">1</strong></span>
+    <span class="active-name" id="active-name-display">Kein Kampf aktiv</span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="initiative" type="button">⚔️ Initiative</button>
+  <button class="tab-btn" data-tab="library" type="button">📖 Bibliothek</button>
+  <button class="tab-btn" data-tab="notes" type="button">📝 Notizen</button>
+  <button class="tab-btn" data-tab="dice" type="button">🎲 Würfel</button>
+</nav>
+
+<main>
+  <!-- ================= INITIATIVE ================= -->
+  <section id="tab-initiative" class="tab-panel active">
+    <div class="panel-toolbar">
+      <div class="turn-controls">
+        <button id="btn-prev-turn" class="btn" type="button">◀ Zurück</button>
+        <button id="btn-next-turn" class="btn btn-accent" type="button">Weiter ▶</button>
+        <button id="btn-reset-encounter" class="btn btn-danger-outline" type="button">Kampf zurücksetzen</button>
+      </div>
+    </div>
+
+    <form id="form-add-combatant" class="card form-inline">
+      <h2 class="card-title">Kämpfer hinzufügen</h2>
+      <div class="form-grid">
+        <label class="field field-grow">
+          <span>Name</span>
+          <input type="text" name="name" required maxlength="100" placeholder="z. B. Goblin" />
+        </label>
+        <label class="field">
+          <span>Typ</span>
+          <select name="type">
+            <option value="pc">Spieler</option>
+            <option value="npc">NPC</option>
+            <option value="monster" selected>Monster</option>
+          </select>
+        </label>
+        <label class="field field-small">
+          <span>Initiative</span>
+          <div class="input-with-btn">
+            <input type="number" name="initiative" value="0" />
+            <button type="button" class="btn-icon" id="btn-roll-init-quick" title="1W20 würfeln">🎲</button>
+          </div>
+        </label>
+        <label class="field field-small">
+          <span>HP</span>
+          <input type="number" name="hp" value="10" min="0" />
+        </label>
+        <label class="field field-small">
+          <span>Max HP</span>
+          <input type="number" name="maxHp" placeholder="= HP" min="0" />
+        </label>
+        <label class="field field-small">
+          <span>RK</span>
+          <input type="number" name="ac" value="10" min="0" />
+        </label>
+        <button type="submit" class="btn btn-primary">+ Hinzufügen</button>
+      </div>
+    </form>
+
+    <div id="combatant-list" class="combatant-list">
+      <p class="empty-hint">Noch keine Kämpfer im Kampf. Füge oben welche hinzu oder aus der Bibliothek.</p>
+    </div>
+  </section>
+
+  <!-- ================= BIBLIOTHEK ================= -->
+  <section id="tab-library" class="tab-panel">
+    <div class="panel-toolbar">
+      <input type="search" id="library-search" placeholder="Suche nach Name oder Tag…" class="search-input" />
+      <div class="filter-group" id="library-filter">
+        <button class="chip active" data-filter="all" type="button">Alle</button>
+        <button class="chip" data-filter="npc" type="button">NPCs</button>
+        <button class="chip" data-filter="monster" type="button">Monster</button>
+      </div>
+      <button id="btn-new-library-entry" class="btn btn-primary" type="button">+ Neuer Eintrag</button>
+    </div>
+
+    <div id="library-list" class="library-list">
+      <p class="empty-hint">Noch keine Einträge. Lege NPCs oder Monster mit „+ Neuer Eintrag“ an.</p>
+    </div>
+  </section>
+
+  <!-- ================= NOTIZEN ================= -->
+  <section id="tab-notes" class="tab-panel">
+    <div class="notes-layout">
+      <aside class="notes-sidebar">
+        <div class="panel-toolbar">
+          <input type="search" id="notes-search" placeholder="Notizen durchsuchen…" class="search-input" />
+          <button id="btn-new-note" class="btn btn-primary" type="button">+ Neu</button>
+        </div>
+        <div id="notes-list" class="notes-list">
+          <p class="empty-hint">Noch keine Notizen.</p>
+        </div>
+      </aside>
+      <div class="notes-editor card" id="notes-editor">
+        <p class="empty-hint" id="notes-editor-empty">Wähle links eine Notiz aus oder erstelle eine neue.</p>
+        <form id="form-note" class="hidden">
+          <input type="text" id="note-title" placeholder="Titel" maxlength="150" required />
+          <input type="text" id="note-tags" placeholder="Tags, kommagetrennt (z. B. session, npc, ort)" maxlength="300" />
+          <textarea id="note-content" placeholder="Inhalt…" rows="16"></textarea>
+          <div class="note-meta" id="note-meta"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Speichern</button>
+            <button type="button" id="btn-delete-note" class="btn btn-danger-outline">Löschen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WÜRFEL ================= -->
+  <section id="tab-dice" class="tab-panel">
+    <div class="card">
+      <h2 class="card-title">Schnellwürfe</h2>
+      <div class="quick-dice" id="quick-dice">
+        <button class="die-btn" data-die="4" type="button">W4</button>
+        <button class="die-btn" data-die="6" type="button">W6</button>
+        <button class="die-btn" data-die="8" type="button">W8</button>
+        <button class="die-btn" data-die="10" type="button">W10</button>
+        <button class="die-btn" data-die="12" type="button">W12</button>
+        <button class="die-btn" data-die="20" type="button">W20</button>
+        <button class="die-btn" data-die="100" type="button">W100</button>
+      </div>
+      <div class="adv-dis-row">
+        <button class="btn btn-success-outline" id="btn-adv" type="button">Vorteil (W20)</button>
+        <button class="btn btn-danger-outline" id="btn-dis" type="button">Nachteil (W20)</button>
+      </div>
+    </div>
+
+    <form id="form-custom-roll" class="card form-inline">
+      <h2 class="card-title">Eigener Wurf</h2>
+      <div class="form-grid">
+        <label class="field field-grow">
+          <span>Ausdruck</span>
+          <input type="text" id="custom-expression" placeholder="z. B. 2W6+3" required />
+        </label>
+        <label class="field field-grow">
+          <span>Bezeichnung (optional)</span>
+          <input type="text" id="custom-label" placeholder="z. B. Feuerball-Schaden" maxlength="100" />
+        </label>
+        <button type="submit" class="btn btn-primary">Würfeln</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="card-title-row">
+        <h2 class="card-title">Verlauf</h2>
+        <button id="btn-clear-history" class="btn btn-danger-outline btn-sm" type="button">Verlauf löschen</button>
+      </div>
+      <div id="roll-history" class="roll-history">
+        <p class="empty-hint">Noch keine Würfe.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= DIALOG: Bibliothekseintrag ================= -->
+<dialog id="library-dialog">
+  <form id="form-library-entry" method="dialog">
+    <h2 class="card-title" id="library-dialog-title">Neuer Eintrag</h2>
+    <input type="hidden" name="id" />
+    <div class="form-grid">
+      <label class="field field-grow">
+        <span>Name</span>
+        <input type="text" name="name" required maxlength="100" />
+      </label>
+      <label class="field">
+        <span>Kategorie</span>
+        <select name="category">
+          <option value="monster">Monster</option>
+          <option value="npc">NPC</option>
+        </select>
+      </label>
+      <label class="field field-small">
+        <span>RK</span>
+        <input type="number" name="ac" min="0" />
+      </label>
+      <label class="field field-small">
+        <span>HP</span>
+        <input type="number" name="hp" min="0" />
+      </label>
+      <label class="field field-grow">
+        <span>Geschwindigkeit</span>
+        <input type="text" name="speed" placeholder="z. B. 30 ft., fliegend 60 ft." maxlength="100" />
+      </label>
+    </div>
+
+    <div class="stat-grid">
+      <label class="field field-tiny"><span>STR</span><input type="number" name="str" /></label>
+      <label class="field field-tiny"><span>DEX</span><input type="number" name="dex" /></label>
+      <label class="field field-tiny"><span>CON</span><input type="number" name="con" /></label>
+      <label class="field field-tiny"><span>INT</span><input type="number" name="int" /></label>
+      <label class="field field-tiny"><span>WIS</span><input type="number" name="wis" /></label>
+      <label class="field field-tiny"><span>CHA</span><input type="number" name="cha" /></label>
+    </div>
+
+    <label class="field">
+      <span>Fähigkeiten</span>
+      <textarea name="abilities" rows="3" placeholder="z. B. Nimble Escape: Kann als Bonusaktion Rückzug oder Verstecken."></textarea>
+    </label>
+    <label class="field">
+      <span>Aktionen</span>
+      <textarea name="actions" rows="3" placeholder="z. B. Kurzschwert. Nahkampfangriff: +4, Reichweite 5 ft., ein Ziel. Treffer: 5 (1W6+2) Stichschaden."></textarea>
+    </label>
+    <label class="field">
+      <span>Notizen</span>
+      <textarea name="notes" rows="2"></textarea>
+    </label>
+    <label class="field">
+      <span>Tags (kommagetrennt)</span>
+      <input type="text" name="tags" placeholder="z. B. goblinoid, wald" maxlength="300" />
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Speichern</button>
+      <button type="button" class="btn" data-close-dialog="library-dialog">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ================= DIALOG: Zum Kampf hinzufügen ================= -->
+<dialog id="add-to-encounter-dialog">
+  <form id="form-add-to-encounter" method="dialog">
+    <h2 class="card-title">Zum Kampf hinzufügen</h2>
+    <input type="hidden" name="libraryId" />
+    <p class="dialog-subtitle" id="add-to-encounter-name"></p>
+    <div class="form-grid">
+      <label class="field field-small">
+        <span>Anzahl</span>
+        <input type="number" name="count" value="1" min="1" max="20" />
+      </label>
+      <label class="field field-small">
+        <span>Initiative</span>
+        <input type="number" name="initiative" value="0" />
+      </label>
+      <label class="field field-checkbox">
+        <input type="checkbox" name="rollInitiative" checked />
+        <span>Initiative pro Kreatur würfeln (1W20)</span>
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Hinzufügen</button>
+      <button type="button" class="btn" data-close-dialog="add-to-encounter-dialog">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<script src="js/app.js" defer></script>
+</body>
+</html>

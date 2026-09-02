@@ -1,0 +1,17 @@
+{
+  "name": "dnd-dm-board-digi",
+  "version": "1.0.0",
+  "description": "Lokales digitales DM-Board für D&D-Sessions: Initiative-Tracker, NPC/Monster-Bibliothek, Session-Notizen und Würfelwurf-Tool.",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
